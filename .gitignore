@@ -1,0 +1,9 @@
+﻿.venv/
+__pycache__/
+*.pyc
+*.json
+e2e_storage/
+candidate_cache/
+outputs/
+.env
+.idea/

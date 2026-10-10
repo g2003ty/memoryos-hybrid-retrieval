@@ -1,0 +1,9 @@
+sentence-transformers
+rank_bm25
+tqdm
+openai
+numpy
+scikit-learn
+# Used by the existing evaluation helpers:
+tiktoken
+faiss-cpu
