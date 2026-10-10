@@ -1,26 +1,42 @@
 ﻿# MemoryOS Hybrid Retrieval
 
-鏈洰褰曟暣鐞嗕簡椤甸潰绾х瀵嗘绱€丅M25 鍜屽€掓暟鎺掑悕铻嶅悎锛圧RF锛夊疄楠岀殑鍙鐜板疄楠岃剼鏈€傝剼鏈彧璇诲彇鐢ㄦ埛鑷鍑嗗鐨?LoCoMo 鏁版嵁鍜?MemoryOS snapshot锛涙湰鐩綍涓嶅寘鍚暟鎹泦銆乻napshot銆佸€欓€夌紦瀛樻垨瀹為獙 JSON銆?
-## 鐩綍缁撴瀯
+本目录整理了页面级稠密检索、BM25 和倒数排名融合（RRF）实验的可复现实验脚本。脚本只读取用户自行准备的 LoCoMo 数据和 MemoryOS snapshot；本目录不包含数据集、snapshot、候选缓存或实验 JSON。
 
-- `retrieval/`锛氶〉闈㈢骇 dense + BM25 + RRF 鐨勪粎妫€绱㈣剼鏈€?- `evaluation/`锛氶〉闈㈢骇妫€绱㈣瘎浼般€佸師濮?prompt 绔埌绔瘎浼帮紝浠ュ強浣滀负鏈湴瀵煎叆渚濊禆鐨?`run_reliability_memoryos_eval.py` 鍜?`memory_verifier.py`銆?- `memoryos_core/`锛歁emoryOS 鐨勮蹇嗘ā鍧楀拰璇勪及杈呭姪浠ｇ爜銆?- `configs/`锛歞ense銆丅M25 鍜?RRF 閰嶇疆銆?- `docs/reproducibility.md`锛氭暟鎹噯澶囦笌杩愯椤哄簭銆?
-## 瀹夊叏璇存槑
+## 目录结构
 
-`memoryos_core/utils.py` 浠?`OPENAI_API_KEY` 鐜鍙橀噺璇诲彇 API key銆傝鍦ㄨ繍琛屽墠璁剧疆璇ュ彉閲忥紝涓嶈鎶婄湡瀹?key 鍐欏叆鑴氭湰銆侀厤缃垨鐗堟湰搴撱€?
-闈欐€佹鏌ユ湭鍙戠幇鏍稿績鑴氭湰涓殑 Windows 鐢ㄦ埛鐩綍鎴?`/root/` 绛夌‖缂栫爜缁濆璺緞銆?
-## 鏁版嵁鑾峰彇
+- `retrieval/`：页面级 dense + BM25 + RRF 的仅检索脚本。
+- `evaluation/`：页面级检索评估、原始 prompt 端到端评估，以及作为本地导入依赖的 `run_reliability_memoryos_eval.py` 和 `memory_verifier.py`。
+- `memoryos_core/`：MemoryOS 的记忆模块和评估辅助代码。
+- `configs/`：dense、BM25 和 RRF 配置。
+- `docs/reproducibility.md`：数据准备与运行顺序。
 
-璇烽€氳繃 LoCoMo 瀹樻柟鍙戝竷娓犻亾鑾峰彇 `locomo10.json`锛屽苟閫氳繃 MemoryOS 椤圭洰鎴栧疄楠屽彂甯冪墿鑾峰彇涓庤鏁版嵁瀵瑰簲鐨勯鏋勫缓 snapshot銆傚皢浜岃€呮斁鍦ㄦ湰鍦板伐浣滃尯锛屼笉瑕佸皢瀹冧滑澶嶅埗杩涙湰浠撳簱銆俿napshot 鏍圭洰褰曞簲鍖呭惈姣忎釜鏍锋湰鐨勬棦鏈?snapshot 鏂囦欢鍜?manifest銆?
-## 瀹夎
+## 安全说明
 
-```bash
+`memoryos_core/utils.py` 从 `OPENAI_API_KEY` 环境变量读取 API key。请在运行前设置该变量，不要把真实 key 写入脚本、配置或版本库。
+
+静态检查未发现核心脚本中的 Windows 用户目录或 `/root/` 等硬编码绝对路径。
+
+## 数据获取
+
+请通过 LoCoMo 官方发布渠道获取 `locomo10.json`，并通过 MemoryOS 项目或实验发布物获取与该数据对应的预构建 snapshot。将二者放在本地工作区，不要将它们复制进本仓库。snapshot 根目录应包含每个样本的既有 snapshot 文件和 manifest。
+
+## 检索参数
+
+- 稠密检索：all-MiniLM-L6-v2，归一化嵌入，前 50 个候选。
+- BM25：k1=1.5，b=0.75，前 50 个候选。
+- 混合检索：RRF k=60，最终候选预算 25。
+- BM25 文档字段：用户输入、助手回复、时间戳。
+
+## 安装
+
+```powershell
 python -m venv .venv
 # Linux/macOS: source .venv/bin/activate
 # Windows PowerShell: .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 ```
 
-璇勬祴鑴氭湰鍒嗗竷鍦ㄤ笉鍚屽瓙鐩綍锛岃繍琛屽墠璇锋妸瀹冧滑鍔犲叆 `PYTHONPATH`锛屼娇鏃т唬鐮佷腑鐨勫悓鍚嶆湰鍦板鍏ヤ繚鎸佸彲鐢細
+评测脚本分布在不同子目录，运行前请把它们加入 `PYTHONPATH`：
 
 ```powershell
 $env:PYTHONPATH = "$PWD\evaluation;$PWD\memoryos_core;$PWD\retrieval"
@@ -30,12 +46,15 @@ $env:PYTHONPATH = "$PWD\evaluation;$PWD\memoryos_core;$PWD\retrieval"
 
 ```powershell
 $env:OPENAI_API_KEY = "<your-key>"
-$env:OPENAI_BASE_URL = "https://api.openai.com/v1"  # 濡備娇鐢ㄥ吋瀹规湇鍔★紝鍙浛鎹?```
+$env:OPENAI_BASE_URL = "https://api.openai.com/v1"
+```
 
-涓嶈鍦ㄨ剼鏈€侀厤缃€丣SON 鎴?README 涓啓鍏ョ湡瀹?key銆?
-## 杩愯绀轰緥
+不要在脚本、配置、JSON 或 README 中写入真实 key。
 
-浠ヤ笅鍛戒护涓殑璺緞鍧囬渶鏇挎崲涓烘湰鍦版暟鎹拰 snapshot 璺緞銆傜涓€姝ヤ笉璋冪敤 LLM锛岀敓鎴愬€欓€夌紦瀛橈紱绗簩姝ヤ娇鐢ㄥ師濮?prompt 鍋氱鍒扮璇勪及銆?
+## 运行示例
+
+以下命令中的路径均需替换为本地数据和 snapshot 路径。第一步不调用 LLM，生成候选缓存；第二步使用原始 prompt 做端到端评估。
+
 ```powershell
 python retrieval\run_page_level_hybrid_retrieval.py `
   --dataset C:\path\to\locomo10.json `
@@ -52,7 +71,8 @@ python evaluation\run_hybrid_retrieval_baseline_e2e.py `
   --output .\outputs\hybrid_retrieval_baseline_e2e_100.json
 ```
 
-`run_v2_relevance_only_e2e.py` 渚濊禆鍘熷 baseline/candidate cache銆傝繍琛屽墠璇锋寜涓婇潰鐨?API key 璇存槑璁剧疆 `OPENAI_API_KEY`銆?
-## 璁稿彲
+`run_v2_relevance_only_e2e.py` 依赖原始 baseline/candidate cache。运行前请按上面的 API key 说明设置 `OPENAI_API_KEY`。
 
-鏈暣鐞嗙洰褰曢噰鐢?MIT License銆傜涓夋柟妯″瀷銆佹暟鎹泦銆丮emoryOS 鍘熷浠ｇ爜鍙婂叾渚濊禆浠嶅彈鍚勮嚜璁稿彲璇佸拰浣跨敤鏉℃绾︽潫銆?
+## 许可
+
+本整理目录采用 MIT License。第三方模型、数据集、MemoryOS 原始代码及其依赖仍受各自许可证和使用条款约束。
